@@ -1,191 +1,119 @@
-<<<<<<< HEAD
 # Code Modification
 
 Kode Yang diubah dalam XV6
 
-## Makefile (Line 3,4,16)
+## Makefile (Line 3)
 
-- CS333_PROJECT ?= 1
-- PRINT_SYSCALLS ?= 1
+- CS333_PROJECT ?= 2
 
-- CS333_UPROGS += _date
+## defs.h (Line 12-15,130-132)
 
-## Syscall.c (Line 109-112,139-141, 182-185)
+- #ifdef CS333_P2
+  
+  struct uproc;
 
-- #ifdef CS333_P1
+  #endif // CS333_P2
+
+- #ifdef CS333_P2
+
+  int             getprocs(uint max, struct uproc* table);
+  
+  #endif // CS333_P2
+  
+## param.h(Line 18-20)
+
+- #ifdef CS333_P2
+  
+  #define DEFAULTID     0  // default ID for UID/GID of process
  
-  extern int sys_date(void);
+  #endif // CS333_P2
+  
+## proc.c
+
+- #ifdef CS333_P2
+
+  #include "uproc.h"
+  
+  #endif //CS333_P2
+
+- #ifdef CS333_P2
+  
+    p->cpu_ticks_total = 0;
+  
+    p->cpu_ticks_in = 0;
+  
+  #endif // CS333_P2
+
+- #ifdef CS333_P2
+  
+    p->uid = DEFAULT_UID;
+   
+    p->gid = DEFAULT_GID;
   
   #endif
   
-- #ifdef CS333_P1
+- #ifdef CS333_P2
+  
+    np->uid = curproc->uid;
+  
+    np->gid = curproc->gid;
+  
+  #endif // CS333_P2
+  
+- #ifdef CS333_P2
+  
+    p->cpu_ticks_in = ticks;
+  
+  #endif // CS333_P2
+  
+- #ifdef CS333_P2
  
-  [SYS_date] sys_date,
+    p->cpu_ticks_total += ticks - p->cpu_ticks_in;
   
-  #endif
+  #endif // CS333_P2
+  
+- #if defined(CS333_P2)
+  
+  void
 
-- #ifdef PRINT_SYSCALLS
-
-    cprintf("%s -> %d\n",
+  procdumpP2P3P4(struct proc *p, char *state_string)
+  
+  {
     
-     syscallnames[num], curproc->tf->eax);
-         
-  #endif
-  
-## user.h (Line 28-30)
-- #ifdef CS333_P1
-  
-  int date(struct rtcdate*);
+    // cprintf("TODO for Project 2, delete this line and implement procdumpP2P3P4() in proc.c to print a row\n");
     
-  #endif // CS333_P1
-  
-## usys.s (Line 33)
-- SYSCALL(date)
-
-## syscall.h (Line 24)
-- #define SYS_date    SYS_halt+1
-
-## sysproc.c (Line 101-111)
-- #ifdef CS333_P1
-
-   int
-   
-   sys_date(void)
-   
-   {
-   
-     struct rtcdate *d;
-     
-     if(argptr(0,(void*)&d, sizeof(struct rtcdate))<0)
-     
-       return -1;
-       
-     cmostime(d);
-     
-     return 0;
-   
-   }
-   
-   #endif
-
-## proc.h (Line 52-54)
-- #ifdef CS333_P1
-
-  uint start_ticks;
-  
-  #endif // CS333_P1
-  
-## proc.c (Line 151-153, 569-575)
-- #ifdef CS333_P1
-
-  p->start_ticks = ticks;
-  
-  #endif
-  
--  #ifdef CS333_P1
-
-    uint elapsed_in_ms = ticks - p->start_ticks;
+    int elapsed = ticks - p->start_ticks;
     
-    uint elapsed_in_sec = elapsed_in_ms / 1000;
+    uint elapsed_sec = elapsed / 1000;
     
-    uint elapsed_decimal = elapsed_in_ms % 1000;
+    uint elapsed_mod = elapsed % 1000;
     
-    cprintf("%d\t%s\t\t%d.%d\t%s\t%d\t", p->pid, p->name, elapsed_in_sec, elapsed_decimal, state_string, p->sz);
+    int total = p->cpu_ticks_total;
     
-  #endif // CS333_P1
-=======
-# Code Modification
-
-Kode Yang diubah dalam XV6
-
-## Makefile (Line 3,4,16)
-
-- CS333_PROJECT ?= 1
-- PRINT_SYSCALLS ?= 1
-
-- CS333_UPROGS += _date
-
-## Syscall.c (Line 109-112,139-141, 182-185)
-
-- #ifdef CS333_P1
- 
-  extern int sys_date(void);
-  
-  #endif
-  
-- #ifdef CS333_P1
- 
-  [SYS_date] sys_date,
-  
-  #endif
-
-- #ifdef PRINT_SYSCALLS
-
-    cprintf("%s -> %d\n",
+    int total_sec = total/1000;
     
-     syscallnames[num], curproc->tf->eax);
-         
-  #endif
-  
-## user.h (Line 28-30)
-- #ifdef CS333_P1
-  
-  int date(struct rtcdate*);
+    int total_mod = total%1000;
     
-  #endif // CS333_P1
-  
-## usys.s (Line 33)
-- SYSCALL(date)
-
-## syscall.h (Line 24)
-- #define SYS_date    SYS_halt+1
-
-## sysproc.c (Line 101-111)
-- #ifdef CS333_P1
-
-   int
-   
-   sys_date(void)
-   
-   {
-   
-     struct rtcdate *d;
-     
-     if(argptr(0,(void*)&d, sizeof(struct rtcdate))<0)
-     
-       return -1;
-       
-     cmostime(d);
-     
-     return 0;
-   
-   }
-   
-   #endif
-
-## proc.h (Line 52-54)
-- #ifdef CS333_P1
-
-  uint start_ticks;
-  
-  #endif // CS333_P1
-  
-## proc.c (Line 151-153, 569-575)
-- #ifdef CS333_P1
-
-  p->start_ticks = ticks;
-  
-  #endif
-  
--  #ifdef CS333_P1
-
-    uint elapsed_in_ms = ticks - p->start_ticks;
+    int ppid;
     
-    uint elapsed_in_sec = elapsed_in_ms / 1000;
+    if(p->parent)
     
-    uint elapsed_decimal = elapsed_in_ms % 1000;
+    {
+      
+      ppid = p->parent->pid;
     
-    cprintf("%d\t%s\t\t%d.%d\t%s\t%d\t", p->pid, p->name, elapsed_in_sec, elapsed_decimal, state_string, p->sz);
+    }
     
-  #endif // CS333_P1
->>>>>>> a8073d39a89f4cd87755ed4de5528dd0831fce61
+    else
+    
+    {
+    
+      ppid = p->pid;
+    
+    }
+    
+    cprintf("%d\t%s\t\t%d\t%d\t%d\t%d.%d\t%d.%d\t%s\t%d\t", p->pid, p->name, p->uid, p->gid, ppid, elapsed_sec, elapsed_mod, total_sec, total_mod, state_string, p->sz);
+    
+    return;
+  
+  }
