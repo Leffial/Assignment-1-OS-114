@@ -151,14 +151,11 @@ allocproc(void)
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-#ifdef CS333_P1
   p->start_ticks = ticks;
-#endif
-
-#ifdef CS333_P1
+  #ifdef CS333_P2
   p->cpu_ticks_total = 0;
   p->cpu_ticks_in = 0;
-#endif
+  #endif // CS333_P2
   return p;
 }
 
@@ -195,12 +192,11 @@ userinit(void)
   // because the assignment might not be atomic.
   acquire(&ptable.lock);
   p->state = RUNNABLE;
-  release(&ptable.lock);
-
 #ifdef CS333_P2
   p->uid = DEFAULT_UID;
   p->gid = DEFAULT_GID;
 #endif
+  release(&ptable.lock);
 }
 
 // Grow current process's memory by n bytes.
@@ -265,12 +261,11 @@ fork(void)
 
   acquire(&ptable.lock);
   np->state = RUNNABLE;
-  release(&ptable.lock);
-
 #ifdef CS333_P2
   np->uid = curproc->uid;
   np->gid = curproc->gid;
-#endif
+#endif // CS333_P2
+  release(&ptable.lock);
 
   return pid;
 }
@@ -411,7 +406,7 @@ scheduler(void)
       p->state = RUNNING;
 #ifdef CS333_P2
       p->cpu_ticks_in = ticks;
-#endif
+#endif // CS333_P2
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -453,8 +448,8 @@ sched(void)
     panic("sched interruptible");
   intena = mycpu()->intena;
 #ifdef CS333_P2
-  p->cpu_ticks_total += (ticks - p->cpu_ticks_in);
-#endif //P2
+  p->cpu_ticks_total += ticks - p->cpu_ticks_in;
+#endif // CS333_P2
   swtch(&p->context, mycpu()->scheduler);
   mycpu()->intena = intena;
 }
@@ -584,7 +579,11 @@ procdumpP2P3P4(struct proc *p, char *state_string)
 {
   // cprintf("TODO for Project 2, delete this line and implement procdumpP2P3P4() in proc.c to print a row\n");
   int elapsed = ticks - p->start_ticks;
+  uint elapsed_sec = elapsed / 1000;
+  uint elapsed_mod = elapsed % 1000;
   int total = p->cpu_ticks_total;
+  int total_sec = total/1000;
+  int total_mod = total%1000;
   int ppid;
   if(p->parent)
   {
@@ -594,16 +593,19 @@ procdumpP2P3P4(struct proc *p, char *state_string)
   {
     ppid = p->pid;
   }
-  cprintf("%d\t%s\t\t%d\t\t%d\t%d\t%d.%d\t%d.%d\t%s\t%d\t", p->pid, p->name, p->uid, p->gid, ppid, elapsed/1000, elapsed%1000, total/1000, total%1000, state_string, p->sz);
+  cprintf("%d\t%s\t\t%d\t%d\t%d\t%d.%d\t%d.%d\t%s\t%d\t", p->pid, p->name, p->uid, p->gid, ppid, elapsed_sec, elapsed_mod, total_sec, total_mod, state_string, p->sz);
   return;
 }
 #elif defined(CS333_P1)
 void
 procdumpP1(struct proc *p, char *state_string)
 {
-  uint elapsed_ms = ticks - p->start_ticks;
-  cprintf("%d\t%s\t\t%d.%d\t%s\t%d\t", p->pid, p->name, elapsed_ms/1000, elapsed_ms%1000, state_string, p->sz);
-  return;
+  #ifdef CS333_P1
+  uint elapsed = ticks - p->start_ticks;
+  uint elapsed_sec = elapsed / 1000;
+  uint elapsed_mod = elapsed % 1000;
+  cprintf("%d\t%s\t\t%d.%d\t%s\t%d\t", p->pid, p->name, elapsed_sec, elapsed_mod, state_string, p->sz);
+  #endif // CS333_P1
 }
 #endif
 
