@@ -200,7 +200,7 @@ getprocs(uint max, struct uproc* table)
 
    #endif
 
-## syscall.c
+## syscall.c(Line 109-119,146-148,149-156)
 
 - #ifdef CS333_P2
   
@@ -262,7 +262,7 @@ getprocs(uint max, struct uproc* table)
   
   #endif
   
-## syscall.h
+## syscall.h(Line 25-31)
 
 - #define SYS_date    SYS_halt+1
   
@@ -278,78 +278,333 @@ getprocs(uint max, struct uproc* table)
   
   #define SYS_getprocs  SYS_setgid+1
   
-## sysproc.c
+## sysproc.c(Line 101-173)
 
 - #ifdef CS333_P1
+
 int
+
 sys_date(void)
+
 {
+  
   struct rtcdate *d;
 
   if(argptr(0, (void*)&d, sizeof(struct rtcdate)) < 0)
+    
     return -1;
+  
   cmostime(d);
+  
   return 0;
+
 }
+
 #endif
 
 #ifdef CS333_P2
+
 uint
+
 sys_getuid(void)
+
 {
+  
   return myproc()->uid;
+
 }
 
 uint
+
 sys_getgid(void)
+
 {
+  
   return myproc()->gid;
+
 }
 
 uint
+
 sys_getppid(void)
+
 {
+  
   if(!myproc()->parent){ // check if parent is null
+    
     return myproc()->pid;
+  
   }
+  
   return myproc()->parent->pid;
+
 }
 
 int
+
 sys_setuid(void)
+
 {
+  
   int uid;
 
   if(argint(0,&uid) < 0)
+    
     return -1;
+  
   if(uid < 0 || uid > 32767)
+    
     return -1;
+  
   myproc()->uid = uid;
+  
   return 0;
+
 }
 
 int
+
 sys_setgid(void)
+
 {
+  
   int gid;
   
   if(argint(0,&gid) < 0)
+    
     return -1;
+  
   if(gid < 0 || gid > 32767)
+    
     return -1;
+  
   myproc()->gid = gid;
+  
   return 0;
+
 }
 
 int
+
 sys_getprocs(void)
+
 {
+  
   uint max;
+  
   struct uproc* table;
+  
   if(argint(0, (void*)&max) < 0)
+    
     return -1;
+  
   if(argptr(1, (void*)&table, sizeof(&table) * max) < 0)
+    
     return -1;
+  
   return getprocs(max, table);
+
 }
+
 #endif
+
+## user.h(Line 28-38)
+
+- #ifdef CS333_P1
+
+  int date(struct rtcdate*);
+  
+  #endif
+  
+  #ifdef CS333_P2
+  
+  uint getuid(void);
+  
+  uint getgid(void);
+  
+  uint getppid(void);
+  
+  int setuid(uint);
+  
+  int setgid(uint);
+  
+  int getprocs(uint max, struct uproc* table);
+  
+  #endif
+
+## usys.S(Line 33-39)
+
+- SYSCALL(date)
+  
+  SYSCALL(getuid)
+  
+  SYSCALL(getgid)
+  
+  SYSCALL(getppid)
+
+  SYSCALL(setuid)
+  
+  SYSCALL(setgid)
+  
+  SYSCALL(getprocs)
+  
+## ps.c(File baru)
+
+- #ifdef CS333_P2
+
+#include "types.h"
+
+#include "user.h"
+
+#include "uproc.h"
+
+
+int
+
+main(void)
+
+{
+  
+  struct uproc* table;
+  
+  int i;
+  
+  uint max = 72;
+  
+  int catch = 0;
+  
+  uint elapsed, decimal, seconds, seconds_decimal;
+  
+  table = malloc(sizeof(struct uproc) * max);
+  
+  catch = getprocs(max, table);
+  
+  if(catch == -1)
+    
+    printf(1, "\nError: Invalid max or NULL uproc table\n");
+  
+  else {
+    
+    printf(1, "\nPID\tName\tUID\tGID\tPPID\tElapsed\tCPU\tState\tSize");
+    
+    for(i = 0;i < catch;++i) {
+      
+      decimal = table[i].elapsed_ticks % 1000;
+      
+      elapsed = table[i].elapsed_ticks / 1000;
+      
+      seconds_decimal = table[i].CPU_total_ticks % 1000;
+      
+      seconds = table[i].CPU_total_ticks / 1000;
+      
+      printf(1, "\n%d\t%s\t%d\t%d\t%d\t%d.", table[i].pid, table[i].name, table[i].uid, table[i].gid, table[i].ppid, elapsed);
+      
+      if(decimal < 10)
+        
+        printf(1, "00");
+      
+      else if(decimal < 100)
+        
+        printf(1, "0");
+      
+      printf(1, "%d\t%d.", decimal, seconds);
+      
+      if(seconds_decimal < 10)
+        
+        printf(1, "00");
+      
+      else if(seconds_decimal < 100)
+        
+        printf(1, "0");
+      
+      printf(1, "%d\t%s\t%d", seconds_decimal, table[i].state, table[i].size);
+    
+    }
+    
+    printf(1, "\n");
+  
+  }
+  
+  free(table);
+  
+  exit();
+
+}
+
+#endif // CS333_P2
+
+## time.c(file baru)
+
+- #ifdef CS333_P2
+
+#include "types.h"
+
+#include "user.h"
+
+int
+
+main(int argc, char* argv[])
+
+{
+  
+  int t1 = 0, t2 = 0, elapsed = 0, decimal = 0, pid = 0;
+  
+  if(argc < 2)
+    
+    printf(1, "(null) ran in 0.000 seconds\n");
+  
+  else {
+    
+    ++argv;
+    
+    t1 = uptime();
+    
+    pid = fork();
+    
+    if(pid < 0) {
+      
+      printf(1, "Ran in 0.000 seconds\n");
+      
+      exit();
+    
+    }
+    
+    else if(pid == 0) {
+      
+      exec(argv[0], argv);
+      
+      printf(1, "Error: No such command\n");
+    
+    }
+    
+    else {
+      
+      wait();
+      
+      t2 = uptime();
+      
+      decimal = (t2 - t1) % 1000;
+      
+      elapsed = (t2 - t1) / 1000;
+      
+      printf(1, "%s ran in %d.", argv[0], elapsed);
+      
+      if(decimal < 10)
+        
+        printf(1, "00");
+      
+      else if(decimal < 100)
+        
+        printf(1, "0");
+      
+      printf(1, "%d seconds\n", decimal);
+    
+    }
+  
+  }
+  
+  exit();
+
+}
+
+#endif // CS333_P2
