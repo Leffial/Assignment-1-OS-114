@@ -28,7 +28,7 @@ Kode Yang diubah dalam XV6
  
   #endif // CS333_P2
   
-## proc.c
+## proc.c(Line 9-11,155-158,195-198,264-267,407-409,450-452,576-597,959-989)
 
 - #ifdef CS333_P2
 
